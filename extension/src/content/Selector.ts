@@ -93,7 +93,12 @@ function captureAndShow(rect: Rect, onDone: () => void) {
     }
 
     if (response?.dataUrl) {
-      cropScreenshot(response.dataUrl, rect).then(finish).catch(() => finish(null))
+      cropScreenshot(response.dataUrl, rect).then(blob => {
+        if (!blob) { finish(null); return }
+        import('./Annotator').then(({ openAnnotator }) => {
+          openAnnotator(blob, finish, () => finish(blob))
+        }).catch(() => finish(blob))
+      }).catch(() => finish(null))
     } else {
       finish(null)
     }
