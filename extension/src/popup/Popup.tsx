@@ -122,7 +122,7 @@ export default function Popup() {
             ))
           )}
 
-          <a href="https://product-issues-dashboard.vercel.app" target="_blank" rel="noreferrer" style={styles.dashLink}>
+          <a href="https://product-issues.vercel.app" target="_blank" rel="noreferrer" style={styles.dashLink}>
             Open Dashboard →
           </a>
         </>

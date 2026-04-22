@@ -1,5 +1,5 @@
 import { saveIssue, IssueStatus } from '../lib/supabase'
-import { getReporterName } from '../lib/storage'
+import { getReporterName, setReporterName } from '../lib/storage'
 
 interface Rect { x: number; y: number; width: number; height: number }
 
@@ -93,7 +93,6 @@ export function showCommentBox(rect: Rect, screenshotBlob: Blob | null, onDone: 
     let reporterName = await getReporterName()
     if (!reporterName) {
       reporterName = prompt('Your name (shown on issues):')?.trim() || 'Anonymous'
-      const { setReporterName } = await import('../lib/storage')
       await setReporterName(reporterName)
     }
 
