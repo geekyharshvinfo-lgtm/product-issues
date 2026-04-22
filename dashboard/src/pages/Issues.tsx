@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import {
   supabase, Issue, IssueStatus, IssuePriority,
-  TeamMember, Project, SavedFilter,
+  TeamMember,
   updateIssueField, deleteIssue, logActivity
 } from '../lib/supabase'
 import StatusBadge from '../components/StatusBadge'
@@ -14,7 +14,7 @@ import { exportExcel, exportCSV, exportPDF } from '../lib/export'
 
 const ALL_STATUSES:   IssueStatus[]   = ['new','discussed','in_progress','done','wont_fix']
 const ALL_PRIORITIES: IssuePriority[] = ['critical','high','medium','low']
-const STATUS_LABELS:  Record<IssueStatus,string>   = { new:'New', discussed:'Discussed', in_progress:'In Progress', done:'Done', wont_fix:"Won't Fix" }
+const STATUS_LABELS:  Record<IssueStatus,string>   = { new:'New', discussed:'Discussed', in_progress:'In Progress', done:'Done', wont_fix:'Not an Issue' }
 const PRIORITY_LABELS:Record<IssuePriority,string> = { critical:'Critical', high:'High', medium:'Medium', low:'Low' }
 
 type SortField = 'created_at' | 'priority' | 'status' | 'due_date' | 'reporter_name'
@@ -30,8 +30,6 @@ function getReporterName() { return localStorage.getItem(REPORTER_KEY) || 'Anony
 export default function IssuesPage() {
   const [issues,       setIssues]       = useState<Issue[]>([])
   const [teamMembers,  setTeamMembers]  = useState<TeamMember[]>([])
-  const [projects,     setProjects]     = useState<Project[]>([])
-  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([])
   const [loading,      setLoading]      = useState(true)
   const [view,         setView]         = useState<View>('table')
   const [selectedIssue,setSelectedIssue]= useState<Issue | null>(null)
@@ -45,7 +43,6 @@ export default function IssuesPage() {
   const [statusFilter,   setStatusFilter]   = useState<IssueStatus[]>([])
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority[]>([])
   const [assigneeFilter, setAssigneeFilter] = useState('')
-  const [projectFilter,  setProjectFilter]  = useState('')
   const [urlFilter,      setUrlFilter]      = useState('')
   const [dateFrom,       setDateFrom]       = useState('')
   const [dateTo,         setDateTo]         = useState('')
@@ -53,11 +50,8 @@ export default function IssuesPage() {
   const [sortField,      setSortField]      = useState<SortField>('created_at')
   const [sortDir,        setSortDir]        = useState<SortDir>('desc')
 
-  // Sidebar
-  const [newProjectName, setNewProjectName] = useState('')
-
   useEffect(() => {
-    Promise.all([fetchIssues(), fetchTeamMembers(), fetchProjects(), fetchSavedFilters()])
+    Promise.all([fetchIssues(), fetchTeamMembers()])
     const channel = supabase.channel('issues-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, fetchIssues)
       .subscribe()
@@ -72,14 +66,7 @@ export default function IssuesPage() {
     const { data } = await supabase.from('team_members').select('*').order('name')
     setTeamMembers(data ?? [])
   }
-  async function fetchProjects() {
-    const { data } = await supabase.from('projects').select('*').order('name')
-    setProjects(data ?? [])
-  }
-  async function fetchSavedFilters() {
-    const { data } = await supabase.from('saved_filters').select('*').order('created_at')
-    setSavedFilters(data ?? [])
-  }
+
 
   function sortIssues(list: Issue[]) {
     return [...list].sort((a, b) => {
@@ -97,7 +84,6 @@ export default function IssuesPage() {
     if (statusFilter.length   && !statusFilter.includes(issue.status))     return false
     if (priorityFilter.length && !priorityFilter.includes(issue.priority)) return false
     if (assigneeFilter && issue.assignee !== assigneeFilter)               return false
-    if (projectFilter  && issue.project_id !== projectFilter)              return false
     if (urlFilter      && !issue.url.toLowerCase().includes(urlFilter.toLowerCase())) return false
     if (dateFrom       && issue.created_at < dateFrom)                     return false
     if (dateTo         && issue.created_at > dateTo + 'T23:59:59')         return false
@@ -109,7 +95,7 @@ export default function IssuesPage() {
           !issue.reporter_name.toLowerCase().includes(q)) return false
     }
     return true
-  })), [issues, statusFilter, priorityFilter, assigneeFilter, projectFilter, urlFilter, dateFrom, dateTo, search, sortField, sortDir])
+  })), [issues, statusFilter, priorityFilter, assigneeFilter, urlFilter, dateFrom, dateTo, search, sortField, sortDir])
 
   const grouped = useMemo(() => {
     if (!groupByDomain) return null
@@ -123,27 +109,7 @@ export default function IssuesPage() {
     else { setSortField(field); setSortDir('asc') }
   }
 
-  const hasActiveFilters = search || statusFilter.length || priorityFilter.length || assigneeFilter || projectFilter || urlFilter || dateFrom || dateTo
-
-  async function saveCurrentFilter() {
-    const name = prompt('Name this filter:')?.trim()
-    if (!name) return
-    const filter_json = { statusFilter, priorityFilter, assigneeFilter, projectFilter, urlFilter, dateFrom, dateTo, search }
-    await supabase.from('saved_filters').insert({ name, filter_json, created_by: reporterName })
-    fetchSavedFilters()
-  }
-
-  function applyFilter(f: SavedFilter) {
-    const j = f.filter_json as Record<string, unknown>
-    setStatusFilter((j.statusFilter as IssueStatus[]) ?? [])
-    setPriorityFilter((j.priorityFilter as IssuePriority[]) ?? [])
-    setAssigneeFilter((j.assigneeFilter as string) ?? '')
-    setProjectFilter((j.projectFilter as string) ?? '')
-    setUrlFilter((j.urlFilter as string) ?? '')
-    setDateFrom((j.dateFrom as string) ?? '')
-    setDateTo((j.dateTo as string) ?? '')
-    setSearch((j.search as string) ?? '')
-  }
+  const hasActiveFilters = search || statusFilter.length || priorityFilter.length || assigneeFilter || urlFilter || dateFrom || dateTo
 
   function handleUpdate(updated: Issue) {
     setIssues(prev => prev.map(i => i.id === updated.id ? updated : i))
@@ -161,7 +127,7 @@ export default function IssuesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this issue?')) return
+    if (!window.confirm('Delete this issue?')) return
     await deleteIssue(id)
     setIssues(prev => prev.filter(i => i.id !== id))
     if (selectedIssue?.id === id) setSelectedIssue(null)
@@ -175,7 +141,7 @@ export default function IssuesPage() {
   }
 
   async function bulkDelete() {
-    if (!confirm(`Delete ${selectedIds.size} issues?`)) return
+    if (!window.confirm(`Delete ${selectedIds.size} issues?`)) return
     await Promise.all([...selectedIds].map(id => deleteIssue(id)))
     setIssues(prev => prev.filter(i => !selectedIds.has(i.id)))
     setSelectedIds(new Set())
@@ -185,11 +151,6 @@ export default function IssuesPage() {
     setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
   }
 
-  async function addProject() {
-    if (!newProjectName.trim()) return
-    await supabase.from('projects').insert({ name: newProjectName.trim() })
-    setNewProjectName(''); fetchProjects()
-  }
 
   function SortIndicator({ field }: { field: SortField }) {
     if (sortField !== field) return <span style={{ color: 'rgba(255,255,255,0.15)', marginLeft: 4 }}>↕</span>
@@ -337,52 +298,10 @@ export default function IssuesPage() {
         </div>
 
         {/* Views */}
-        <div className="px-3 space-y-0.5 mb-5">
+        <div className="px-3 space-y-0.5">
           {([['table','Table'], ['kanban','Kanban'], ['analytics','Analytics']] as [View,string][]).map(([v, label]) => (
             <button key={v} onClick={() => setView(v)} style={sidebarItemStyle(view === v)}>{label}</button>
           ))}
-        </div>
-
-        {/* Saved Filters */}
-        <div className="px-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>Saved Filters</span>
-            {hasActiveFilters && (
-              <button onClick={saveCurrentFilter} className="text-xs transition-colors" style={{ color: 'rgba(99,102,241,0.7)' }}>Save</button>
-            )}
-          </div>
-          {savedFilters.length === 0
-            ? <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>None saved yet</p>
-            : savedFilters.map(f => (
-              <div key={f.id} className="flex items-center justify-between group">
-                <button onClick={() => applyFilter(f)} className="flex-1 text-left py-1 text-xs transition-colors truncate"
-                  style={{ color: 'rgba(255,255,255,0.45)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                  {f.name}
-                </button>
-                <button onClick={async () => { await supabase.from('saved_filters').delete().eq('id', f.id); fetchSavedFilters() }}
-                  className="text-xs opacity-0 group-hover:opacity-100 ml-1 transition-all" style={{ color: 'rgba(255,255,255,0.3)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-              </div>
-            ))
-          }
-        </div>
-
-        {/* Projects */}
-        <div className="px-4 flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>Projects</span>
-          </div>
-          <button onClick={() => setProjectFilter('')} style={sidebarItemStyle(!projectFilter)}>All issues</button>
-          {projects.map(p => (
-            <button key={p.id} onClick={() => setProjectFilter(p.id)} style={sidebarItemStyle(projectFilter === p.id)} className="truncate w-full">{p.name}</button>
-          ))}
-          <div className="flex gap-1.5 mt-2">
-            <input value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="New project..."
-              onKeyDown={e => e.key === 'Enter' && addProject()}
-              className="flex-1 text-xs rounded-lg px-2.5 py-1.5 outline-none"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#e5e7eb' }} />
-            <button onClick={addProject} className="text-xs px-2.5 rounded-lg font-medium"
-              style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: 'none', cursor: 'pointer' }}>Add</button>
-          </div>
         </div>
       </div>
 
@@ -401,8 +320,8 @@ export default function IssuesPage() {
           </div>
           <span className="text-xs tabular-nums" style={{ color: 'rgba(255,255,255,0.25)' }}>{filtered.length} of {issues.length}</span>
           {hasActiveFilters && (
-            <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter([]); setAssigneeFilter(''); setProjectFilter(''); setUrlFilter(''); setDateFrom(''); setDateTo('') }}
-              className="text-xs transition-colors" style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter([]); setAssigneeFilter(''); setUrlFilter(''); setDateFrom(''); setDateTo('') }}
+            className="text-xs transition-colors" style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>
               Clear filters
             </button>
           )}
@@ -514,7 +433,7 @@ export default function IssuesPage() {
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1" style={{ overflow: view === 'kanban' ? 'visible' : 'auto' }}>
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <span className="text-sm" style={{ color: 'rgba(255,255,255,0.2)' }}>Loading...</span>

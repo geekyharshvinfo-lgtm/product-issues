@@ -17,7 +17,7 @@ interface Props {
 
 const ALL_STATUSES:   IssueStatus[]   = ['new','discussed','in_progress','done','wont_fix']
 const ALL_PRIORITIES: IssuePriority[] = ['critical','high','medium','low']
-const STATUS_LABELS:  Record<IssueStatus,string>   = { new:'New', discussed:'Discussed', in_progress:'In Progress', done:'Done', wont_fix:"Won't Fix" }
+const STATUS_LABELS:  Record<IssueStatus,string>   = { new:'New', discussed:'Discussed', in_progress:'In Progress', done:'Done', wont_fix:'Not an Issue' }
 const PRIORITY_LABELS:Record<IssuePriority,string> = { critical:'Critical', high:'High', medium:'Medium', low:'Low' }
 const LINK_TYPES = ['duplicate','blocks','blocked_by','related']
 

@@ -6,7 +6,7 @@ const CONFIG: Record<IssueStatus, { label: string; dot: string; text: string }> 
   discussed:   { label: 'Discussed',   dot: 'bg-blue-400',    text: 'text-blue-300' },
   in_progress: { label: 'In Progress', dot: 'bg-amber-400',   text: 'text-amber-300' },
   done:        { label: 'Done',        dot: 'bg-emerald-400', text: 'text-emerald-300' },
-  wont_fix:    { label: "Won't Fix",   dot: 'bg-rose-400',    text: 'text-rose-300' },
+  wont_fix:    { label: 'Not an Issue', dot: 'bg-rose-400',    text: 'text-rose-300' },
 }
 
 export default function StatusBadge({ status }: { status: IssueStatus }) {
