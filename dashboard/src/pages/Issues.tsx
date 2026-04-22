@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
+import { User } from '@supabase/supabase-js'
 import {
   supabase, Issue, IssueStatus, IssuePriority,
   TeamMember,
@@ -23,11 +24,7 @@ type View      = 'table' | 'kanban' | 'analytics'
 
 const PRIORITY_ORDER: Record<IssuePriority,number> = { critical:0, high:1, medium:2, low:3 }
 const STATUS_ORDER:   Record<IssueStatus,number>   = { new:0, in_progress:1, discussed:2, done:3, wont_fix:4 }
-const REPORTER_KEY = 'pit_reporter_name'
-
-function getReporterName() { return localStorage.getItem(REPORTER_KEY) || 'Anonymous' }
-
-export default function IssuesPage() {
+export default function IssuesPage({ user }: { user: User }) {
   const [issues,       setIssues]       = useState<Issue[]>([])
   const [teamMembers,  setTeamMembers]  = useState<TeamMember[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -35,8 +32,9 @@ export default function IssuesPage() {
   const [selectedIssue,setSelectedIssue]= useState<Issue | null>(null)
   const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set())
   const [updatingId,   setUpdatingId]   = useState<string | null>(null)
-  const [reporterName] = useState(getReporterName)
   const [exportOpen,   setExportOpen]   = useState(false)
+
+  const reporterName = user.user_metadata?.full_name || user.user_metadata?.name || user.email || 'Anonymous'
 
   // Filters
   const [search,         setSearch]         = useState('')
@@ -302,6 +300,22 @@ export default function IssuesPage() {
           {([['table','Table'], ['kanban','Kanban'], ['analytics','Analytics']] as [View,string][]).map(([v, label]) => (
             <button key={v} onClick={() => setView(v)} style={sidebarItemStyle(view === v)}>{label}</button>
           ))}
+        </div>
+
+        <div className="mt-auto px-3 pb-2">
+          <button
+            onClick={() => supabase.auth.signOut()}
+            style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              padding: '6px 10px', borderRadius: '8px', fontSize: '12px',
+              cursor: 'pointer', background: 'transparent', border: 'none',
+              color: 'rgba(255,255,255,0.25)', transition: 'color 0.1s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#f87171' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.25)' }}
+          >
+            Sign out
+          </button>
         </div>
       </div>
 

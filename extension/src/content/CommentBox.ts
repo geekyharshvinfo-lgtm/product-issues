@@ -1,5 +1,4 @@
 import { saveIssue, IssueStatus } from '../lib/supabase'
-import { getReporterName, setReporterName } from '../lib/storage'
 
 interface Rect { x: number; y: number; width: number; height: number }
 
@@ -89,11 +88,9 @@ export function showCommentBox(rect: Rect, screenshotBlob: Blob | null, onDone: 
     saveBtn.textContent = 'Saving...'
     saveBtn.style.background = '#4f46e5'
 
-    let reporterName = await getReporterName()
-    if (!reporterName) {
-      reporterName = prompt('Your name (shown on issues):')?.trim() || 'Anonymous'
-      await setReporterName(reporterName)
-    }
+    const stored = await chrome.storage.local.get('pit_auth_user')
+    const authUser = stored['pit_auth_user'] as { name: string; email: string } | null
+    const reporterName = authUser?.name || authUser?.email || 'Anonymous'
 
     const { error } = await saveIssue({
       url:           window.location.href,
