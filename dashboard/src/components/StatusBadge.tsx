@@ -1,18 +1,19 @@
 import React from 'react'
 import { IssueStatus } from '../lib/supabase'
 
-const CONFIG: Record<IssueStatus, { label: string; classes: string }> = {
-  new:         { label: 'New',         classes: 'bg-gray-700 text-gray-300' },
-  discussed:   { label: 'Discussed',   classes: 'bg-blue-900 text-blue-300' },
-  in_progress: { label: 'In Progress', classes: 'bg-yellow-900 text-yellow-300' },
-  done:        { label: 'Done',        classes: 'bg-green-900 text-green-300' },
-  wont_fix:    { label: "Won't Fix",   classes: 'bg-red-900 text-red-300' },
+const CONFIG: Record<IssueStatus, { label: string; dot: string; text: string }> = {
+  new:         { label: 'New',         dot: 'bg-slate-400',   text: 'text-slate-300' },
+  discussed:   { label: 'Discussed',   dot: 'bg-blue-400',    text: 'text-blue-300' },
+  in_progress: { label: 'In Progress', dot: 'bg-amber-400',   text: 'text-amber-300' },
+  done:        { label: 'Done',        dot: 'bg-emerald-400', text: 'text-emerald-300' },
+  wont_fix:    { label: "Won't Fix",   dot: 'bg-rose-400',    text: 'text-rose-300' },
 }
 
 export default function StatusBadge({ status }: { status: IssueStatus }) {
-  const { label, classes } = CONFIG[status] ?? CONFIG.new
+  const { label, dot, text } = CONFIG[status] ?? CONFIG.new
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${classes}`}>
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
       {label}
     </span>
   )

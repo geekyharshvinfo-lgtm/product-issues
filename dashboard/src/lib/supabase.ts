@@ -20,7 +20,6 @@ export interface Issue {
   priority: IssuePriority
   assignee: string | null
   due_date: string | null
-  tags: string[]
   project_id: string | null
   screenshot_path: string | null
   x: number | null

@@ -13,7 +13,7 @@ export function exportExcel(issues: Issue[]) {
     'Reporter':     i.reporter_name,
     'URL':          i.url,
     'Page Title':   i.page_title ?? '',
-    'Tags':         (i.tags ?? []).join(', '),
+    'Tags':         '',
     'Due Date':     i.due_date ?? '',
     'Created At':   new Date(i.created_at).toLocaleString(),
   }))
@@ -36,7 +36,7 @@ export function exportCSV(issues: Issue[]) {
   const header = 'ID,Title,Comment,Status,Priority,Assignee,Reporter,URL,Page Title,Tags,Due Date,Created At\n'
   const rows = issues.map(i =>
     [i.id, i.title ?? '', i.comment, i.status, i.priority, i.assignee ?? '', i.reporter_name,
-     i.url, i.page_title ?? '', (i.tags ?? []).join(';'), i.due_date ?? '', i.created_at]
+     i.url, i.page_title ?? '', i.due_date ?? '', i.created_at]
       .map(v => `"${String(v).replace(/"/g, '""')}"`)
       .join(',')
   ).join('\n')
