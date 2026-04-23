@@ -5,7 +5,7 @@
   "description": "Capture issues on any website with rectangle selection and comments",
   "permissions": ["activeTab", "tabs", "storage", "scripting", "identity"],
   "oauth2": {
-    "client_id": "PASTE_YOUR_CHROME_EXTENSION_CLIENT_ID_HERE.apps.googleusercontent.com",
+    "client_id": "783982534140-4391fukosdvv3618s3cck2l5mvnad9kf.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile"
